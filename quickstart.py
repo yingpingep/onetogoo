@@ -19,17 +19,21 @@ def CreateFolder(name, parents, service):
     print('Folder ID:', newFile.get('id')) 
 
 def MakeRequest(folderName):
-    data = {'folder': name}
-    response = requests.post('')
+    global functionURL
+    data = {"folder": folderName}
+    response = requests.post(functionURL, data = data, headers={"Content-Type": "application/json"})
+    print(response.text)
 
 def main():
     # Apply a token thought Oauth.
-    store = file.Storage('token.json')
-    credit = store.get()
-    if not credit or credit.invalid:
-        flow = client.flow_from_clientsecrets('credentials.json', scopes)
-        credit = tools.run_flow(flow, store)    
-    service = build('drive', 'v3', http = credit.authorize(Http()))    
+    # store = file.Storage('token.json')
+    # credit = store.get()
+    # if not credit or credit.invalid:
+    #     flow = client.flow_from_clientsecrets('credentials.json', scopes)
+    #     credit = tools.run_flow(flow, store)    
+    # service = build('drive', 'v3', http = credit.authorize(Http()))    
+
+    MakeRequest('tet')
 
 if __name__ == '__main__':
     main()

@@ -2,6 +2,7 @@ secret.json
 credentials.json
 Include/
 Lib/
+lib/
 Scripts/
 tcl/
 pip-selfcheck.json
