@@ -3,6 +3,7 @@ from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 import requests
+import json
 
 scopes = "https://www.googleapis.com/auth/drive"
 functionURL = r"https://prod-22.eastasia.logic.azure.com:443/workflows/f18d6c9e410b401e851a2fbdd10aaabb/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=UmjvwpNzBFkWMZW2pJh7CiCNE6Mj0vV-HtIkWSVgkZo"
@@ -21,7 +22,10 @@ def CreateFolder(name, parents, service):
 def MakeRequest(folderName):
     global functionURL
     data = {"folder": folderName}
-    response = requests.post(functionURL, data = data, headers={"Content-Type": "application/json"})
+    print(data)
+    header = {"content-type": "application/json"}
+    response = requests.post(functionURL, data=json.dumps(data, ensure_ascii=False), headers=header)
+    print(response.status_code)
     print(response.text)
 
 def main():
