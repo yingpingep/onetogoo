@@ -3,3 +3,4 @@ credentials.json
 pip-selfcheck.json
 token.json
 .vscode/
+output/

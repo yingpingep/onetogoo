@@ -18,19 +18,21 @@ def CreateFolder(folderObj, service):
     newFile = service.files().create(body=fileMetadata, fields='id').execute()
     print('Folder ID:', newFile.get('id')) 
 
-def GetFoldersRequest(folderName):
-    global functionURL
+def GetFoldersRequest(parent, id):
+    global functionURL    
+    data = {
+        "parentFolder": parent, 
+        "parentFolderId": id }
+            
+    dataJson = json.dumps(data, ensure_ascii=False)  
 
-    rNames = []
-    data = {"folder": folderName}    
-    dataJson = json.dumps(data, ensure_ascii=False)    
     header = {"content-type": "application/json"}
     response = requests.post(functionURL, data=dataJson.encode('utf-8'), headers=header)
     
-    # if response.status_code != requests.codes.ok:        
-    #     return False        
-    # else:
-    return response.text, response.status_code
+    if response.status_code != requests.codes.ok:        
+        return False        
+    else:
+        return response.text
 
 
 def main():
@@ -42,7 +44,7 @@ def main():
         credit = tools.run_flow(flow, store)    
     service = build('drive', 'v3', http = credit.authorize(Http()))
 
-    folderJob = GetFoldersRequest("11th MSP")
+    folderJob = GetFoldersRequest("11th MSP", "6689F3CBC015F764!165050")
     print(folderJob)
 
 if __name__ == '__main__':
