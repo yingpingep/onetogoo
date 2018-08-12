@@ -4,3 +4,4 @@ pip-selfcheck.json
 token.json
 .vscode/
 output/
+test.py
