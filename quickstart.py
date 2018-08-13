@@ -2,17 +2,46 @@ from __future__ import print_function
 from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
+from folder import *
 import requests
 import json
 import os
 
 scopes = "https://www.googleapis.com/auth/drive"
-functionURL = r"https://prod-22.eastasia.logic.azure.com:443/workflows/f18d6c9e410b401e851a2fbdd10aaabb/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=UmjvwpNzBFkWMZW2pJh7CiCNE6Mj0vV-HtIkWSVgkZo"
+getFileUrl = r"https://prod-22.eastasia.logic.azure.com:443/workflows/f18d6c9e410b401e851a2fbdd10aaabb/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=UmjvwpNzBFkWMZW2pJh7CiCNE6Mj0vV-HtIkWSVgkZo"
+movingUrl = r"https://prod-00.eastasia.logic.azure.com:443/workflows/b45257f6b94a486a853ac2c04b2fc4e3/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=YCMVuowoHKv_baRt1mlU9qFgA9I5r472PziFfredtoE"
+
+gooRootPath = "/Microsoft Student Partners"
 rootFilePath = "output/"
 mapping = {}
 
+def CreateFolders(dir):
+    print("Processing folder {0}...", dir.name)
 
-def CreateFolders(gooParent, gooId, folderList, service):    
+    if len(dir.children) == 0:
+        return True
+
+    for sub in dir.children:
+        fileMetadata = {
+            "name": sub["name"],
+            "mimeType": "application/vnd.google-apps.folder",
+            'parents': [dir.gooId]
+        }
+
+        newFolder = service.files().create(body=fileMetadata, fields="id").execute()
+
+        try:
+            mapping[sub["name"]]
+        except KeyError:
+            pass
+        else:
+            mapping[sub].gooId = newFolder.get("id")
+            CreateFolders(mapping[sub["name"]])
+        
+    return True
+
+
+def O_CreateFolders(gooParent, gooId, folderList, service):    
     afFilePath = rootFilePath + "goo/" + gooId + ".json"    
     afList = []
     print("Processing folder {0}...", gooParent)
@@ -38,53 +67,37 @@ def CreateFolders(gooParent, gooId, folderList, service):
         return False    
 
     for sf in afList:
-        CreateFolders(sf['name'], sf['id'], GetFoldersList(rootFilePath + sf['name'] + ".json"), service)
+        O_CreateFolders(sf['name'], sf['id'], O_GetFoldersList(rootFilePath + sf['name'] + ".json"), service)
 
     return True        
 
-def GetFoldersRequest(oneParent, oneId):    
-    global functionURL
-    subFilePath = rootFilePath + oneId + ".json"
-
-    print("Getting folder {0}...", oneParent)
-    if os.path.exists(subFilePath):
-        return True
-
-    data = {
-        "parentFolder": oneParent, 
-        "parentFolderId": oneId }  
-            
-    dataJson = json.dumps(data, ensure_ascii=False)  
-
+def GetFolders(dir):
+    oid = dir.oneId
+    data = {"oneId": oid}
+    dataJson = json.dumps(data)
     header = {"content-type": "application/json"}
-    response = requests.post(functionURL, data=dataJson.encode('utf-8'), headers=header)
-    
+    response = requests.post(getFileUrl, data=dataJson.encode('utf-8'), headers=header)
+
     if response.status_code != requests.codes.ok:
         print(response.text)
-        return False  
-    else:        
-        f = open(subFilePath, 'w', encoding='utf-8')        
-        f.write(response.text)
-        f.close()
-        print("File {0} is created.", oneId + ".json")
+        return False
+    else:
+        resJson = json.loads(response.text)
+        sub = resJson["subFolders"]
+        print("{0} with {1} sub-folders is recoded.".format(dir.name, len(sub)))
 
-        fList = GetFoldersList(subFilePath)
-        lenfList = len(fList)        
+        if len(sub) == 0:            
+            return False
 
-        if lenfList == 0:
-            return True
-        for sf in fList:
-            GetFoldersRequest(sf['name'], sf['id'])
-        
+        dir.children = sub
+        mapping[dir.name] = dir            
+
+        for sf in dir.children:
+            temp = Folder(sf["name"], sf["oneId"])
+            temp.parents = dir.parents.copy()
+            temp.parents.append(dir.name)          
+            GetFolders(temp)
         return True
-
-def GetFoldersList(fileName):
-    fsFile = open(fileName, 'r', encoding='utf-8')
-    fsJson = fsFile.read()
-    fsFile.close()
-
-    fsObj = json.loads(fsJson)
-    return fsObj['subFolders']
 
 def main():
     # Apply a token thought Oauth.
@@ -97,11 +110,17 @@ def main():
         credit = tools.run_flow(flow, store)    
     service = build('drive', 'v3', http = credit.authorize(Http()))    
 
+    root = Folder("Microsoft Student Partners", "6689F3CBC015F764!234053", "1FLs6ehV-TaI45fkjYLkWjq04RdsRIzul")        
+    GetFolders(root)
+    f = open(rootFilePath + "mapping.json", "w", encoding="utf-8")
+    f.write(json.dumps(mapping, cls=FolderConvert, sort_keys=True, indent=4))
+    f.close()
+    CreateFolders(mapping[root.name])    
 
     # Get sub-folder through Azure logic app.    
-    if GetFoldersRequest("11th MSP", "6689F3CBC015F764!165050"):
-        # Microsoft student partners id: 1FLs6ehV-TaI45fkjYLkWjq04RdsRIzul        
-        CreateFolders("Microsoft Student Partners", "1FLs6ehV-TaI45fkjYLkWjq04RdsRIzul", GetFoldersList(rootFilePath + "Microsoft Student Partners.json"), service)
+    # if O_GetFoldersRequest("11th MSP", "6689F3CBC015F764!165050"):
+    #     # Microsoft student partners id: 1FLs6ehV-TaI45fkjYLkWjq04RdsRIzul        
+    #     O_CreateFolders("Microsoft Student Partners", "1FLs6ehV-TaI45fkjYLkWjq04RdsRIzul", O_GetFoldersList(rootFilePath + "Microsoft Student Partners.json"), service)
     
 if __name__ == '__main__':
     main()
