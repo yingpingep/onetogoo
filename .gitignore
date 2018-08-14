@@ -4,5 +4,9 @@ pip-selfcheck.json
 token.json
 .vscode/
 output/
+Include/
+Lib/
+Scripts/
+tcl/
 test.py
 __pycache__/
