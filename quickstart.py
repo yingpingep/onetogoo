@@ -11,7 +11,6 @@ scopes = "https://www.googleapis.com/auth/drive"
 getFileUrl = r"https://prod-22.eastasia.logic.azure.com:443/workflows/f18d6c9e410b401e851a2fbdd10aaabb/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=UmjvwpNzBFkWMZW2pJh7CiCNE6Mj0vV-HtIkWSVgkZo"
 movingUrl = r"https://prod-00.eastasia.logic.azure.com:443/workflows/b45257f6b94a486a853ac2c04b2fc4e3/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=YCMVuowoHKv_baRt1mlU9qFgA9I5r472PziFfredtoE"
 
-gooRootPath = "/Microsoft Student Partners"
 rootFilePath = "output/"
 mapping = {}
 
