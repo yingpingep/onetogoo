@@ -17,7 +17,7 @@ outputFile = rootFilePath + "mapping.json"
 mapping = {}
 
 def GetUrlSetting():
-    global getFileUrl, movingUrl'
+    global getFileUrl, movingUrl
     fileName = "logicsetting.json"
     if os.path.exists(fileName):
         print("Cannot find Logic app setting file: {0}.".format(fileName))
