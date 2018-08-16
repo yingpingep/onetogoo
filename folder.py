@@ -48,6 +48,9 @@ class FolderDecoder(json.JSONDecoder):
             temp = {}
             for oKey in obj:
                 temp[oKey] = obj[oKey]
-            return temp
+            return temp        
         else:
-            return Folder(obj["name"], obj["oneId"], obj["gooId"], obj["parents"], obj["children"])
+            if len(obj) == 2 and isinstance(obj, dict):
+                return {"name": obj["name"], "oneId": obj["oneId"]}
+            else:
+                return Folder(obj["name"], obj["oneId"], obj["gooId"], obj["parents"], obj["children"])
