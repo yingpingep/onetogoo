@@ -11,13 +11,15 @@ import sys
 scopes = "https://www.googleapis.com/auth/drive"
 getFileUrl = r""
 movingUrl = r""
+rootName = ""
+rootOneId = ""
 
 rootFilePath = "output/"
 outputFile = rootFilePath + "mapping.json"
 mapping = {}
 
-def GetUrlSetting():
-    global getFileUrl, movingUrl
+def GetUserSetting():
+    global getFileUrl, movingUrl, rootName, rootOneId
     fileName = "logicsetting.json"
     if os.path.exists(fileName):
         print("Cannot find Logic app setting file: {0}.".format(fileName))
@@ -26,8 +28,14 @@ def GetUrlSetting():
     f = open(fileName, "r", encoding="utf-8")
     setting = json.loads(f.read())
     f.close()
+    
     getFileUrl = setting["getFileUrl"]
     movingUrl = setting["movingUrl"]
+    rootName = setting["rootName"]
+    rootOneId = setting["rootOneId"]
+
+    if getFileUrl == "" or movingUrl == "" or rootName == "" or rootOneId == "":
+        print("User settings shouldn't be empty. Please make sure your settings are all set in: {0}".format(fileName))
 
     return True
 
@@ -125,7 +133,7 @@ def GetFolders(dir):
             GetFolders(temp)
         return True
 
-def Usage():
+def Usage():        
     sys.exit()
 
 def main():    
@@ -145,23 +153,20 @@ def main():
         credit = tools.run_flow(flow, store)    
     service = build('drive', 'v3', http = credit.authorize(Http()))        
 
-    # root = Folder("Microsoft Student Partners", "6689F3CBC015F764!234053", "1FLs6ehV-TaI45fkjYLkWjq04RdsRIzul")   
-    # if not os.path.exists(outputFile):             
-    #     GetFolders(root)
-    #     f = open(outputFile, "w", encoding="utf-8")
-    #     f.write(Folder.Encoder(mapping))
-    #     f.close()
-    # else:
-    #     f = open(outputFile, "r", encoding="utf-8")
-    #     text = f.read()
-    #     mapping = Folder.Decoder(text)
-    # CreateFolders(mapping[root.oneId], service)    
+    root = Folder(rootName, rootOneId)    
+    if not os.path.exists(outputFile):             
+        GetFolders(root)
+        f = open(outputFile, "w", encoding="utf-8")
+        f.write(Folder.Encoder(mapping))
+        f.close()
+    else:
+        f = open(outputFile, "r", encoding="utf-8")
+        text = f.read()
+        mapping = Folder.Decoder(text)
+        f.close()
+
+    CreateFolders(mapping[root.oneId], service)    
     
 if __name__ == '__main__':
-    if len(sys.argv) < 1:
-        Usage()
-
-    for arg in range(0, len(sys.argv)):
-        pass
-
+    GetUserSetting()
     main()

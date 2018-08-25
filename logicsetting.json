@@ -1,4 +1,6 @@
 {
     "getFileUrl": "",
-    "movingUrl": ""
+    "movingUrl": "",
+    "rootName": "",
+    "rootOneId": ""    
 }
