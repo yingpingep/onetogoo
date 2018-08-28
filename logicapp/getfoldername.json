@@ -1,0 +1,210 @@
+{
+    "$connections": {
+        "value": {
+            "onedrive": {
+                "connectionId": "",
+                "connectionName": "onedrive",
+                "id": ""
+            }
+        }
+    },
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "For_each_:_find_out_sub-folders": {
+                "actions": {
+                    "條件": {
+                        "actions": {
+                            "Add_object_to_array": {
+                                "inputs": {
+                                    "name": "subFolders",
+                                    "value": "@variables('subFolder')"
+                                },
+                                "runAfter": {
+                                    "Setting_subFolder_object": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "AppendToArrayVariable"
+                            },
+                            "Setting_subFolder_object": {
+                                "inputs": {
+                                    "name": "subFolder",
+                                    "value": {
+                                        "name": "@{items('For_each_:_find_out_sub-folders')?['Name']}",
+                                        "oneId": "@{items('For_each_:_find_out_sub-folders')?['Id']}"
+                                    }
+                                },
+                                "runAfter": {},
+                                "type": "SetVariable"
+                            }
+                        },
+                        "expression": {
+                            "and": [
+                                {
+                                    "equals": [
+                                        "@items('For_each_:_find_out_sub-folders')?['IsFolder']",
+                                        "@true"
+                                    ]
+                                }
+                            ]
+                        },
+                        "runAfter": {},
+                        "type": "If"
+                    }
+                },
+                "foreach": "@body('Get_every_item_from_specific_parent_folder')",
+                "runAfter": {
+                    "Get_every_item_from_specific_parent_folder": [
+                        "Succeeded"
+                    ]
+                },
+                "runtimeConfiguration": {
+                    "concurrency": {
+                        "repetitions": 1
+                    }
+                },
+                "type": "Foreach"
+            },
+            "Get_every_item_from_specific_parent_folder": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['onedrive']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/datasets/default/folders/@{encodeURIComponent(encodeURIComponent(triggerBody()?['oneId']))}",
+                    "queries": {
+                        "includeSubfolders": false
+                    }
+                },
+                "runAfter": {
+                    "subFolder": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            },
+            "returnVariable": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "response",
+                            "type": "Object"
+                        }
+                    ]
+                },
+                "runAfter": {},
+                "type": "InitializeVariable"
+            },
+            "subFolder": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "subFolder",
+                            "type": "Object"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "subFolders": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "subFolders": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "subFolders",
+                            "type": "Array"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "returnVariable": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "回應": {
+                "inputs": {
+                    "body": "@variables('response')",
+                    "schema": {
+                        "properties": {
+                            "subFolders": {
+                                "items": {
+                                    "properties": {
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "oneId": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "name",
+                                        "oneId"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "statusCode": 200
+                },
+                "kind": "Http",
+                "runAfter": {
+                    "設定變數": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            },
+            "設定變數": {
+                "inputs": {
+                    "name": "response",
+                    "value": {
+                        "subFolders": "@variables('subFolders')"
+                    }
+                },
+                "runAfter": {
+                    "For_each_:_find_out_sub-folders": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "SetVariable"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "schema": {
+                        "properties": {
+                            "oneId": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "operationOptions": "EnableSchemaValidation",
+                "type": "Request"
+            }
+        }
+    }
+}

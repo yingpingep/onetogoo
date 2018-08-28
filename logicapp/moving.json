@@ -1,0 +1,142 @@
+{
+    "$connections": {
+        "value": {
+            "googledrive": {
+                "connectionId": "",
+                "connectionName": "googledrive",
+                "id": ""
+            },
+            "onedrive": {
+                "connectionId": "",
+                "connectionName": "onedrive",
+                "id": ""
+            }
+        }
+    },
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "For_each": {
+                "actions": {
+                    "條件": {
+                        "actions": {
+                            "取得檔案內容": {
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['onedrive']['connectionId']"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/datasets/default/files/@{encodeURIComponent(encodeURIComponent(items('For_each')?['Id']))}/content",
+                                    "queries": {
+                                        "inferContentType": true
+                                    }
+                                },
+                                "runAfter": {},
+                                "type": "ApiConnection"
+                            },
+                            "建立檔案": {
+                                "inputs": {
+                                    "body": "@body('取得檔案內容')",
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['googledrive']['connectionId']"
+                                        }
+                                    },
+                                    "method": "post",
+                                    "path": "/datasets/default/files",
+                                    "queries": {
+                                        "folderPath": "@triggerBody()?['path']",
+                                        "name": "@items('For_each')?['Name']",
+                                        "queryParametersSingleEncoded": true
+                                    }
+                                },
+                                "runAfter": {
+                                    "取得檔案內容": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                "type": "ApiConnection"
+                            }
+                        },
+                        "expression": {
+                            "and": [
+                                {
+                                    "equals": [
+                                        "@items('For_each')?['IsFolder']",
+                                        "@false"
+                                    ]
+                                }
+                            ]
+                        },
+                        "runAfter": {},
+                        "type": "If"
+                    }
+                },
+                "foreach": "@body('列出資料夾中的檔案')",
+                "runAfter": {
+                    "列出資料夾中的檔案": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Foreach"
+            },
+            "列出資料夾中的檔案": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['onedrive']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/datasets/default/folders/@{encodeURIComponent(encodeURIComponent(triggerBody()?['oneId']))}",
+                    "queries": {
+                        "includeSubfolders": false
+                    }
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            },
+            "回應": {
+                "inputs": {
+                    "statusCode": 200
+                },
+                "kind": "Http",
+                "runAfter": {
+                    "For_each": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Response"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "schema": {
+                        "properties": {
+                            "oneId": {
+                                "type": "string"
+                            },
+                            "path": {
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    }
+}
